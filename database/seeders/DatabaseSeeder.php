@@ -15,9 +15,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(TranslationSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
+        User::updateOrCreate([
             'email' => 'test@example.com',
+        ],[
+            'name' => 'Test User',
             'password' => bcrypt('123456')
         ]);
     }
