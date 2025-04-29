@@ -7,6 +7,7 @@ use App\Models\TranslationContent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Class TranslationRepository
@@ -22,7 +23,14 @@ class TranslationRepository implements TranslationRepositoryInterface
      */
     public function getAllTranslations(): \Illuminate\Pagination\LengthAwarePaginator
     {
-        return Translation::with('contents')->paginate(100);
+        // return Translation::select('id', 'key', 'tag')->with(['contents:id,translation_id,locale,content'])->paginate(5000);
+
+        $page = request()->get('page', 1);
+        $cacheKey = "translations_page_{$page}";
+
+        return Cache::remember($cacheKey, 3600, function () {
+            return Translation::select('id', 'key', 'tag')->with(['contents:id,translation_id,locale,content'])->paginate(5000);
+        });
     }
 
     /**

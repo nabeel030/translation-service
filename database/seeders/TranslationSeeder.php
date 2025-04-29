@@ -3,10 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Translation;
 use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
-use Illuminate\Support\Facades\Log;
 
 class TranslationSeeder extends Seeder
 {
@@ -16,29 +14,39 @@ class TranslationSeeder extends Seeder
     public function run(): void
     {        
         $faker = Faker::create();
-
-        
         $locales = ['en', 'fr', 'es'];
-        $chunkSize = 1000;
-        
-        for ($i = 0; $i < 10000; $i += $chunkSize) {
-            $translations = Translation::factory()->count($chunkSize)->create();
+        $translationsChunk = [];
+        $translationContentChunk = [];
 
-            foreach ($translations as $translation) {
-                $contents = [];
+        $lastId = DB::table('translations')->max('id') ?? 0;
 
-                foreach ($locales as $locale) {
-                    $contents[] = [
-                        'translation_id' => $translation->id,
-                        'locale' => $locale,
-                        'content' => $faker->sentence(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
+        for($i=1; $i<=100_000; $i++) {
+            $lastId++;
+            $translationsChunk[] = [
+                'id' => $lastId,
+                'key' => $faker->unique()->slug(),
+                'tag' => $faker->randomElement(['web', 'mobile', 'desktop']),
+            ];
 
-                DB::table('translation_contents')->insert($contents);
+            foreach ($locales as $locale) {
+                $translationContentChunk[] = [
+                    'translation_id' => $lastId,
+                    'locale' => $locale,
+                    'content' => $faker->sentence(),
+                ];
             }
+
+            if ($i % 5000 == 0) {
+                DB::table('translations')->insert($translationsChunk);
+                DB::table('translation_contents')->insert($translationContentChunk);
+                $translationsChunk = [];
+                $translationContentChunk = [];
+            }
+        }
+
+        if (!empty($translationsChunk)) {
+            DB::table('translations')->insert($translationsChunk);
+            DB::table('translation_contents')->insert($translationContentChunk);
         }
     }
 }
